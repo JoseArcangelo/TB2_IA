@@ -1,0 +1,410 @@
+{
+  "name": "My workflow 3",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -380,
+        260
+      ],
+      "id": "dde920c6-a137-4a9c-a2ee-66ca842b73e9",
+      "name": "When chat message received",
+      "webhookId": "5d401fa1-a721-4b99-8f80-44ac41625a7a"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1x2CP-Tl5vYLWurxAzz0Vp0TMcL9CgNr4",
+          "mode": "list",
+          "cachedResultName": "Symptom2Disease.csv",
+          "cachedResultUrl": "https://drive.google.com/file/d/1x2CP-Tl5vYLWurxAzz0Vp0TMcL9CgNr4/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -20,
+        100
+      ],
+      "id": "7c071206-31ca-474a-91f0-c856af5a24f8",
+      "name": "Google Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "yqGIXlbnNPQgcMOJ",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        180,
+        100
+      ],
+      "id": "33a04cd3-15cb-44c8-b7c6-e4a3e298e732",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": {
+          "__rl": true,
+          "value": "diagnosticos",
+          "mode": "list",
+          "cachedResultName": "diagnosticos"
+        },
+        "dataMode": "defineBelow",
+        "columnToMatchOn": "id",
+        "valueToMatchOn": "={{ $json['EMPTY'] }}",
+        "valuesToSend": {
+          "values": [
+            {
+              "column": "label",
+              "value": "={{ $json['label'] }}"
+            },
+            {
+              "column": "text",
+              "value": "={{ $json['text'] }}"
+            },
+            {
+              "column": "id",
+              "value": "={{ $json['EMPTY'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        500,
+        100
+      ],
+      "id": "bd798eb9-14f6-4f17-aae2-870064d7bc40",
+      "name": "MySQL",
+      "credentials": {
+        "mySql": {
+          "id": "D2rsT9V8oxNye3e5",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Você é um especialista médico em diagnóstico de doenças infecciosas.\n\nCom base no relato clínico do médico sobre o paciente:\n{{ $('When chat message received').item.json.chatInput }}\n\nE comparando com os seguintes registros confirmados de pacientes que realmente estavam com dengue:{{ $json.text }}\n\n\nAnalise os sintomas relatados no texto do médico e destaque quais deles coincidem com os sintomas encontrados nos casos reais de dengue.\nEm seguida, estime a probabilidade (%) de que o paciente esteja com dengue, com base nessa comparação sintomática.\n\nApresente sua resposta como um pequeno parágrafo clínico, explicando os indícios da semelhança e justificando a probabilidade de forma objetiva.\n\n⚠️ Não invente dados. Use apenas as informações do relato e dos casos confirmados.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        0,
+        460
+      ],
+      "id": "472bf118-d65d-401a-ab33-1f4111b8f946",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "mistral:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "typeVersion": 1,
+      "position": [
+        100,
+        640
+      ],
+      "id": "7367d9bb-bdc9-4705-bc49-a207c33a2d06",
+      "name": "Ollama Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "mL07gmFbQQNdDbkR",
+          "name": "Ollama account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash-8b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        240,
+        960
+      ],
+      "id": "f5d53bcf-bb08-4c6f-a65c-1e6f0a2f7496",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rdkfNfdfwe12yuIo",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Você é um especialista médico em diagnóstico de doenças infecciosas.\n\nCom base no relato clínico do médico sobre o paciente:\n{{ $('When chat message received').item.json.chatInput }}\n\nE comparando com os seguintes registros confirmados de pacientes com dengue:{{ $('MySQL1').item.json.text }}\n\nAnalise os sintomas relatados no texto do médico e destaque quais deles coincidem com os sintomas encontrados nos casos reais de dengue.\nEm seguida, estime a probabilidade (%) de que o paciente esteja com dengue, com base nessa comparação sintomática.\n\nApresente sua resposta como um pequeno parágrafo clínico, explicando os indícios da semelhança e justificando a probabilidade de forma objetiva.\n\n⚠️ Não invente dados. Use apenas as informações do relato e dos casos confirmados.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        220,
+        760
+      ],
+      "id": "4fdfdae0-c239-4801-8fba-c23454d9bf0a",
+      "name": "Basic LLM Chain1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        -320,
+        560
+      ],
+      "id": "ffa1eb18-a05a-4c05-88ab-875ebae7af7e",
+      "name": "MySQL1",
+      "credentials": {
+        "mySql": {
+          "id": "D2rsT9V8oxNye3e5",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an SQL expert.\n\nYour task is to extract exactly one disease name from a sentence written by the user (even if the sentence includes multiple diseases, choose only one — preferably the first mentioned or at random).\n\nUsing that disease name, return a SQL query in the following exact format:\n\npgsql\nCopiar\nEditar\nSELECT * FROM diagnosticos WHERE label LIKE '%<Disease>%' LIMIT 5;\n⚠️ Strict rules:\n\nReplace <Disease> with the extracted disease name.\n\nDo not include comments, explanations, or line breaks.\n\nOutput only the SQL statement on a single line.\n\nThe output must follow the format exactly.\n\nExample input:\n\"The patient may have dengue, zika, or yellow fever.\"\n\nExpected output:\nSELECT * FROM diagnosticos WHERE label LIKE '%Dengue%' LIMIT 5;\n\nUser input: {{ $json.chatInput }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -800,
+        520
+      ],
+      "id": "53251309-f4bf-4a21-bda0-7352873a3139",
+      "name": "Basic LLM Chain2"
+    },
+    {
+      "parameters": {
+        "model": "mistral:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "typeVersion": 1,
+      "position": [
+        -780,
+        680
+      ],
+      "id": "ff298597-d788-4f15-b751-b4e469a9ee86",
+      "name": "Ollama Model1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "mL07gmFbQQNdDbkR",
+          "name": "Ollama account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Você é um especialista em análise clínica e decisão médica assistida por inteligência artificial.\n\nDuas IAs analisaram um relato clínico e um conjunto de dados reais sobre casos de dengue, e forneceram diagnósticos distintos.\n\nSua tarefa é:\n\nComparar as duas respostas abaixo (Resposta A e Resposta B);\n\nAvaliar qual resposta está mais alinhada com os sintomas relatados no texto clínico do médico:\nSintomas relatados: {{ $('When chat message received').item.json.chatInput }}\n\nVerificar qual resposta usa melhor os dados reais sobre a doença para justificar a probabilidade diagnóstica;\n\nEscolher a melhor resposta com base na clareza, precisão clínica, uso de evidências e coerência lógica;\n\nTranscrever e melhorar a melhor resposta em um único parágrafo, de forma clara e precisa;\n\nFinalize com uma indicação da probabilidade diagnóstica em forma percentual (por exemplo: \"Probabilidade estimada: 85%\").\n\n⚠️ Não explique sua escolha.\n⚠️ Não diga qual IA gerou a resposta.\n⚠️ Apenas forneça o parágrafo final aprimorado com a probabilidade no fim.\n\nResposta A (ollama): {{ $json.text }}\n\nResposta B (Gemini): {{ $json.text }}\n\nSintomas do paciente: {{ $('When chat message received').item.json.chatInput }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        600,
+        420
+      ],
+      "id": "899157fa-db96-4f90-bff5-17d6b51a7ad7",
+      "name": "Basic LLM Chain3"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash-8b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        640,
+        720
+      ],
+      "id": "0c0a9f85-75e6-4e94-a203-dfc01e3c1feb",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rdkfNfdfwe12yuIo",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Google Drive",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Basic LLM Chain2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "MySQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MySQL1": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain2": {
+      "main": [
+        [
+          {
+            "node": "MySQL1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a75b7bf9-b027-4094-b608-42e46b70714c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6eeb69ff1538bf4a595b33c2449e24f05e9f2382236017f3a39cc78be4de3320"
+  },
+  "id": "KUHQ3EeikXnIgzyV",
+  "tags": []
+}
